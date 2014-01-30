@@ -1,0 +1,17 @@
+#!/bin/sh
+
+which covertool > /dev/null
+
+if [ $? -ne 0 ] ; then
+    echo "Cobertura converter not installed, install it from here:"
+    echo "https://github.com/idubrov/covertool"
+    exit 1
+else
+    echo $ECOVER_APPS
+    for APP in $ECOVER_APPS ; do
+        echo "Generating cobertura coverage report for `basename $APP`";
+        covertool -cover $ECOVER_LOGS/total-all.coverdata \
+                  -output $ECOVER_LOGS/`basename $APP`.xml \
+                  -src $APP/src -appname `basename $APP` > /dev/null ;
+    done
+fi

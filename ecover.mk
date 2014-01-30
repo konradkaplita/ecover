@@ -23,3 +23,6 @@ cover-merge:
 
 cover-check:
 	@$(ECOVER)/utils/check-coverage $(ECOVER_THRESHOLDS)
+
+cover-cobertura:
+	@$(ECOVER)/utils/cobertura
