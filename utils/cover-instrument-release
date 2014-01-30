@@ -1,0 +1,23 @@
+#!/bin/sh
+
+ECOVER_START="{apply,{application,start_boot,\[ecover,permanent\]}},"
+ECOVER_COMPILE="     {apply,{ecover,compile,\[\]}},"
+
+grep '{apply,{ecover,compile,\[\]}},' $ECOVER_RELEASE_SCRIPT > /dev/null
+ECOVER_INSTRUMENTED=$?
+
+case $1 in
+    enable )
+        if [ $ECOVER_INSTRUMENTED -ne 0 ] ; then
+            echo "ECover: instrumenting release startup code" ;
+            sed -ibak "/$ECOVER_START/{G;s/$/$ECOVER_COMPILE/;}" $ECOVER_RELEASE_SCRIPT ;
+            erl -eval "ok = systools:script2boot(\"$ECOVER_RELEASE_BOOT\"), init:stop()." -noshell > /dev/null ;
+        else
+            echo "ECover: release $ECOVER_RELEASE_SCRIPT already cover instrumented" ;
+            erl -eval "ok = systools:script2boot(\"$ECOVER_RELEASE_BOOT\"), init:stop()." -noshell > /dev/null ;
+        fi ;;
+    disable )
+        echo "ECover: de-instrumenting release startup code" ;
+        sed -ibak '/{apply,{ecover,compile,\[\]}},/d' $ECOVER_RELEASE_SCRIPT ;
+    erl -eval "ok = systools:script2boot(\"$ECOVER_RELEASE_BOOT\"), init:stop()." -noshell ;;
+esac

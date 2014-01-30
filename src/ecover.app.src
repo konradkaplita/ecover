@@ -1,0 +1,11 @@
+{application, ecover,
+ [{description, "Test coverage report generation tool"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  tools
+                 ]},
+  {env, []}
+ ]}.
