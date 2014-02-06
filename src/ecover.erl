@@ -99,35 +99,28 @@ import_unit_coverage() ->
 
 -spec list_unit_coverdata() -> list(string()).
 list_unit_coverdata() ->
-    AppsDir = filename:join([code:root_dir(), "..", "apps"]),
-    {ok, Dirs} = file:list_dir(AppsDir),
-    Apps = lists:filter(fun(F) ->
-                                case re:run(F, "^\\.", [{capture, none}]) of
-                                    match ->
-                                        false;
-                                    nomatch ->
-                                        true
-                                end
-                        end, Dirs),
-    lists:map(fun(App) ->
-                      AppDir = filename:join([AppsDir, App]),
-                      Ret = string:strip(os:cmd("find " ++ AppDir ++ " -name all.coverdata | sort | tail -1"), right, $\n),
+    {ok, Coverdata} = application:get_env(ecover, apps_coverdata),
+    lists:map(fun({_App, Path}) ->
+                      AppLogsDir = filename:join([code:root_dir(), "..", Path, "logs"]),
+                      Ret = string:strip(os:cmd("find " ++ AppLogsDir ++ " -name all.coverdata | sort | tail -1"), right, $\n),
                       io:format("Found CT coverdata file: ~p~n", [Ret]),
                       Ret
-              end, Apps).
+              end, Coverdata).
 
 
 -spec get_modules() -> list(atom()).
 get_modules() ->
-    lists:filter(fun(M) ->
-                         Path = proplists:get_value(source, M:module_info(compile), ""),
-                         case re:run(Path, "/apps/[a-zA-Z_-]+/src/.*erl$", [{capture, none}]) of
-                             match ->
-                                 true;
-                             nomatch ->
-                                 false
-                         end
-                 end, erlang:loaded()).
+    {ok, Patterns} = application:get_env(ecover, apps_patterns),
+    lists:foldl(fun(Pattern, Acc) ->
+                        P = code:root_dir() ++ "/lib/" ++ Pattern ++ "-*/ebin/*.beam",
+                        Files = filelib:wildcard(P),
+                        Mods = [begin
+                                    B = filename:basename(F),
+                                    [Mod, "beam"] = re:split(B, "\\.", [{return, list}]),
+                                    list_to_atom(Mod)
+                                end || F <- Files],
+                        Acc ++ Mods
+                end, [], Patterns).
 
 -spec get_applications_for_modules(list(atom())) -> list(tuple(atom(), atom())).
 get_applications_for_modules(Modules) ->
