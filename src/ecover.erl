@@ -99,19 +99,19 @@ import_unit_coverage() ->
 
 -spec list_unit_coverdata() -> list(string()).
 list_unit_coverdata() ->
-    {ok, Coverdata} = application:get_env(ecover, apps_coverdata),
-    lists:map(fun({_App, Path}) ->
+    {ok, AppsConfigs} = application:get_env(ecover, apps),
+    lists:map(fun([_, {coverdata_path, Path}]) ->
                       AppLogsDir = filename:join([code:root_dir(), "..", Path, "logs"]),
                       Ret = string:strip(os:cmd("find " ++ AppLogsDir ++ " -name all.coverdata | sort | tail -1"), right, $\n),
                       io:format("Found CT coverdata file: ~p~n", [Ret]),
                       Ret
-              end, Coverdata).
+              end, AppsConfigs).
 
 
 -spec get_modules() -> list(atom()).
 get_modules() ->
-    {ok, Patterns} = application:get_env(ecover, apps_patterns),
-    lists:foldl(fun(Pattern, Acc) ->
+    {ok, AppsConfigs} = application:get_env(ecover, apps),
+    lists:foldl(fun([{name, Pattern}, _], Acc) ->
                         P = code:root_dir() ++ "/lib/" ++ Pattern ++ "-*/ebin/*.beam",
                         Files = filelib:wildcard(P),
                         Mods = [begin
@@ -120,7 +120,7 @@ get_modules() ->
                                     list_to_atom(Mod)
                                 end || F <- Files],
                         Acc ++ Mods
-                end, [], Patterns).
+                end, [], AppsConfigs).
 
 -spec get_applications_for_modules(list(atom())) -> list(tuple(atom(), atom())).
 get_applications_for_modules(Modules) ->
