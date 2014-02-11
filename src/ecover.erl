@@ -44,7 +44,12 @@ analyse() ->
                              {Module, App, Covered, NotCovered};
                          Error ->
                              io:format("Cover analysing error: ~p~n", [M]),
-                             io:format("Error: ~p~n", [Error]),
+                             case Error of
+                                 {error, {file, _Bin, enoent}} ->
+                                     io:format("Error: ~p~n", [{error, {file, M, enoent}}]);
+                                 _ ->
+                                     io:format("Error: ~p~n", [Error])
+                             end,
                              {M, App, 0, 0}
                      end
              end, get_applications_for_modules(get_modules())),
